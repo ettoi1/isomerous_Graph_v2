@@ -1,0 +1,64 @@
+seed: 42
+output_dir: outputs/default
+trainer:
+  epochs: 5
+  batch_size: 2
+  lr: 0.001
+  weight_decay: 0.0
+  grad_clip: 1.0
+  amp: false
+  log_interval: 1
+  eval_interval: 1
+  num_workers: 0
+  patience: 3
+  scheduler:
+    name: cosine
+    warmup_epochs: 1
+    min_lr: 1.0e-5
+model:
+  hidden_dim: 64
+  num_heads: 4
+  dropout: 0.1
+  timeseries:
+    enabled: true
+    input_channels: 1
+    use_frequency: false
+    performer: false
+    rope: true
+    window_size: null
+  router:
+    enabled: true
+    num_relations: 4
+    temperature: 1.0
+    keep_threshold: 0.5
+  graph_transformer:
+    enabled: true
+    num_layers: 2
+  community:
+    enabled: true
+    num_slots: 4
+    iterations: 3
+  hypergraph:
+    enabled: true
+    num_iters: 1
+  readout:
+    enabled: true
+    num_classes: 2
+losses:
+  main_task: cross_entropy
+  router_balance_weight: 0.01
+  community_compact_weight: 0.01
+  hypergraph_consistency_weight: 0.01
+logging:
+  use_tensorboard: true
+  project_name: fmri_dynamic_connectivity
+visualization:
+  attention_maps: true
+  community_tsne: true
+ablation:
+  disable_timeseries: false
+  disable_router: false
+  disable_graph_tf: false
+  disable_community: false
+  disable_hyper_tf: false
+  disable_hier_readout: false

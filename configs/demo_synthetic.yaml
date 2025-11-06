@@ -1,0 +1,73 @@
+seed: 7
+output_dir: outputs/demo
+synthetic:
+  num_subjects: 8
+  num_roi: 32
+  num_timepoints: 120
+  num_frequency: 3
+  num_edges: 96
+  num_edge_metrics: 6
+  num_classes: 2
+  noise_level: 0.1
+trainer:
+  epochs: 3
+  batch_size: 2
+  lr: 0.001
+  weight_decay: 0.0
+  grad_clip: 1.0
+  amp: false
+  log_interval: 1
+  eval_interval: 1
+  num_workers: 0
+  patience: 5
+  scheduler:
+    name: cosine
+    warmup_epochs: 1
+    min_lr: 1.0e-5
+model:
+  hidden_dim: 48
+  num_heads: 4
+  dropout: 0.1
+  timeseries:
+    enabled: true
+    input_channels: 1
+    use_frequency: true
+    performer: false
+    rope: true
+    window_size: 20
+  router:
+    enabled: true
+    num_relations: 4
+    temperature: 1.0
+    keep_threshold: 0.4
+  graph_transformer:
+    enabled: true
+    num_layers: 1
+  community:
+    enabled: true
+    num_slots: 3
+    iterations: 3
+  hypergraph:
+    enabled: true
+    num_iters: 1
+  readout:
+    enabled: true
+    num_classes: 2
+losses:
+  main_task: cross_entropy
+  router_balance_weight: 0.05
+  community_compact_weight: 0.02
+  hypergraph_consistency_weight: 0.01
+logging:
+  use_tensorboard: false
+  project_name: demo
+visualization:
+  attention_maps: true
+  community_tsne: false
+ablation:
+  disable_timeseries: false
+  disable_router: false
+  disable_graph_tf: false
+  disable_community: false
+  disable_hyper_tf: false
+  disable_hier_readout: false
