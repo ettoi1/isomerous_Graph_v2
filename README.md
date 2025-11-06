@@ -94,6 +94,48 @@ The remainder of the pipeline remains unchanged. Ensure the YAML configuration
 reflects the number of ROIs, candidate edges and metrics produced by your
 pre-processing pipeline.
 
+### Using `.mat` ROI files (built-in)
+
+`RoiDataset` now supports reading `.mat` files directly (via `scipy` or `h5py`).
+Add a `data` section to your YAML config and run without `--synthetic`:
+
+```
+data:
+  root: data/my_subjects           # folder containing .mat files (searched recursively)
+  num_edges: 96                    # number of candidate edges per subject
+  num_edge_metrics: 6              # edge metrics dimension
+  mat_var: roi_ts                  # variable name inside .mat; omit to auto-detect
+  label_from: filename             # one of: filename | parent | matvar
+  label_var: label                 # when label_from=matvar, variable name
+  recursive: true                  # search subfolders
+  file_pattern: "*.mat"            # pattern to match
+  allow_transpose: true            # transpose if shape looks like [T, R]
+  precomputed_edge_bank: false     # set true if .mat contains edge_bank & edge_index
+```
+
+Requirements: install either `scipy` or `h5py` (e.g., `pip install scipy`).
+
+Naming assumptions: if `label_from=filename`, an integer in the filename will be
+used as label when present; otherwise 0.
+
+#### Labels from CSV
+
+If labels are stored in a CSV file, add these fields under `data`:
+
+```
+data:
+  labels_csv: data/labels.csv   # CSV path
+  id_column: subject_id         # column with subject IDs matching file stems (or parents)
+  label_column: label           # column with class labels (int or string)
+  subject_id_from: stem         # how to derive the id from files: stem | parent | basename
+```
+
+- If `label_column` contains integers, they are used directly.
+- If strings, they are factorized deterministically to integers (sorted unique order).
+- When `labels_csv` is set, it overrides `label_from`/`label_var` heuristics.
+
+See `configs/demo_mat_csv.yaml` for a complete example.
+
 ## Testing
 
 Run the provided smoke tests with:

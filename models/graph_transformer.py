@@ -18,6 +18,7 @@ class GraphTransformerConfig:
     num_layers: int
     dropout: float
     use_rope: bool = False
+    max_relations: int = 32
 
 
 class GraphTransformerLayer(torch.nn.Module):
@@ -61,7 +62,7 @@ class GraphTransformer(torch.nn.Module):
         self.layers = torch.nn.ModuleList(
             [GraphTransformerLayer(config) for _ in range(config.num_layers)]
         )
-        self.relation_bias = torch.nn.Embedding(32, 1)
+        self.relation_bias = torch.nn.Embedding(max(config.max_relations, 32), 1)
 
     def forward(
         self,
@@ -99,8 +100,11 @@ class GraphTransformer(torch.nn.Module):
         relation_id: torch.Tensor,
         keep_mask: torch.Tensor,
     ) -> torch.Tensor:
-        edge_index = edge_index[:, keep_mask]
-        relation_id = relation_id[keep_mask]
+        if keep_mask is not None:
+            edge_index = edge_index[:, keep_mask]
+            relation_id = relation_id[keep_mask]
+        if edge_index.numel() == 0:
+            return sparse_attention_mask(torch.empty(2, 0, dtype=torch.long, device=edge_index.device), num_nodes)
         base_mask = sparse_attention_mask(edge_index, num_nodes)
         if relation_id.numel() == 0:
             return base_mask

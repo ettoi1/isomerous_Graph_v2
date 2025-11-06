@@ -36,6 +36,7 @@ def main() -> None:
     set_seed(config.get("seed", 0))
 
     synthetic_cfg = None
+    data_cfg = config.get("data", {})
     if args.synthetic:
         synth = config.get("synthetic", {})
         synthetic_cfg = SyntheticConfig(
@@ -53,9 +54,23 @@ def main() -> None:
     if ts_cfg.get("window_size"):
         window_cfg = WindowConfig(window_size=ts_cfg["window_size"], stride=ts_cfg["window_size"])
     dataset = RoiDataset(
+        root=(Path(data_cfg["root"]) if (not args.synthetic and data_cfg.get("root")) else None),
         synthetic_config=synthetic_cfg,
         window_config=window_cfg,
         seed=config.get("seed", 0),
+        num_edges=data_cfg.get("num_edges"),
+        num_edge_metrics=data_cfg.get("num_edge_metrics"),
+        mat_var=data_cfg.get("mat_var"),
+        label_from=data_cfg.get("label_from", "filename"),
+        label_var=data_cfg.get("label_var", "label"),
+        labels_csv=(Path(data_cfg["labels_csv"]) if data_cfg.get("labels_csv") else None),
+        id_column=data_cfg.get("id_column", "subject_id"),
+        label_column=data_cfg.get("label_column", "label"),
+        subject_id_from=data_cfg.get("subject_id_from", "stem"),
+        recursive=data_cfg.get("recursive", True),
+        file_pattern=data_cfg.get("file_pattern", "*.mat"),
+        allow_transpose=data_cfg.get("allow_transpose", True),
+        precomputed_edge_bank=data_cfg.get("precomputed_edge_bank", False),
     )
     loader = torch.utils.data.DataLoader(
         dataset,

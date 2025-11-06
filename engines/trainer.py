@@ -46,6 +46,8 @@ class Trainer:
         patience = self.config["trainer"].get("patience", epochs)
         patience_counter = 0
         for epoch in range(epochs):
+            if hasattr(self.model, "on_epoch_start"):
+                self.model.on_epoch_start(epoch, epochs)
             train_metrics = self._run_epoch(train_loader, epoch, training=True)
             print(f"Epoch {epoch} train metrics: {train_metrics}")
             if self.scheduler is not None:
@@ -87,10 +89,20 @@ class Trainer:
                 if self.amp:
                     with torch.cuda.amp.autocast():
                         outputs = self.model(batch)
-                        loss, loss_dict = compute_losses(outputs, batch, self.config["losses"])
+                        loss, loss_dict = compute_losses(
+                            outputs,
+                            batch,
+                            self.config.get("losses", {}),
+                            self.config.get("loss_weights", {}),
+                        )
                 else:
                     outputs = self.model(batch)
-                    loss, loss_dict = compute_losses(outputs, batch, self.config["losses"])
+                    loss, loss_dict = compute_losses(
+                        outputs,
+                        batch,
+                        self.config.get("losses", {}),
+                        self.config.get("loss_weights", {}),
+                    )
             if training:
                 self.scaler.scale(loss).backward()
                 if self.grad_clip > 0:
@@ -106,10 +118,23 @@ class Trainer:
             if training and step % self.config["trainer"].get("log_interval", 10) == 0:
                 for name, value in loss_dict.items():
                     self.logger.log_scalar(f"train/{name}", value.item(), epoch * len(loader) + step)
+                self._log_router_stats(outputs.get("router_stats"), epoch * len(loader) + step)
         losses_mean = {k: float(v / max(count, 1)) for k, v in losses_accum.items()}
         metrics_mean = {k: float(v / max(count, 1)) for k, v in metrics_accum.items()}
         return {**losses_mean, **metrics_mean}
 
+    def _log_router_stats(self, stats: Optional[Dict[str, torch.Tensor]], global_step: int) -> None:
+        if not stats:
+            return
+        for key, value in stats.items():
+            if not torch.is_tensor(value):
+                continue
+            tensor = value.detach()
+            if tensor.ndim == 0:
+                self.logger.log_scalar(f"router/{key}", float(tensor), global_step)
+            elif tensor.ndim == 1:
+                for idx, item in enumerate(tensor):
+                    self.logger.log_scalar(f"router/{key}_{idx}", float(item), global_step)
 
 def _accumulate(acc: Dict[str, float], values: Dict[str, torch.Tensor]) -> Dict[str, float]:
     for key, value in values.items():

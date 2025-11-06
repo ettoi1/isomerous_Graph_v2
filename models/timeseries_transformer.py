@@ -37,7 +37,7 @@ class TimeSeriesTransformer(torch.nn.Module):
     def __init__(self, config: TimeSeriesTransformerConfig) -> None:
         super().__init__()
         self.config = config
-        self.input_proj = torch.nn.Linear(config.input_channels, config.hidden_dim)
+        self.input_proj = torch.nn.LazyLinear(config.hidden_dim)
         encoder_layer = torch.nn.TransformerEncoderLayer(
             d_model=config.hidden_dim,
             nhead=config.num_heads,
